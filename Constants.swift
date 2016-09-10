@@ -10,6 +10,6 @@ import Foundation
 import UIKit
 
 
-class Constants {
-    let overallColor = UIColor(red: 92/255, green: 202/255, blue: 255/255, alpha: 1.0)
+struct Constants {
+    let overallColor = UIColor(red: 161/255, green: 213/255, blue: 223/255, alpha: 1.0)
 }

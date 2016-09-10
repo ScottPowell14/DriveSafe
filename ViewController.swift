@@ -33,6 +33,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     // User Information
     var userStartLocation : CLLocation?
     var userDestinationLocation : CLLocation?
+    var userRoute : MKRoute?
     
     
 
@@ -58,10 +59,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         mapView.delegate = self
         locationManager.delegate = self
         
+        locationManager.requestWhenInUseAuthorization()
+        
         // location manager config
         if CLLocationManager.locationServicesEnabled() {
-            // centerOnUserLocation method
-            // place user annotation
+            mapView.showsUserLocation = true
+            self.centerOnUser()
+            self.placeStartLocationAnnotation()
         } else {
             locationManager.requestWhenInUseAuthorization()
         }
@@ -100,7 +104,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 //        self.resultSearchController?.searchBar.frame = CGRect(x: 0, y: 0, width: self.destinationLocationSearchBar.frame.width, height: self.destinationLocationSearchBar.frame.height)
         
         
-        self.resultSearchController?.searchBar.frame = self.destinationLocationSearchBar.frame
+        // self.resultSearchController?.searchBar.frame = self.destinationLocationSearchBar.frame
         
         self.resultSearchController?.searchBar.addConstraints(self.destinationLocationSearchBar.constraints)
         
@@ -116,8 +120,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         
         
         locationSearchTable.handleMapSearchDelegate = self
-//        self.destinationLocationSearchBar.addSubview((self.resultSearchController?.searchBar)!)
-        self.view.addSubview((self.resultSearchController?.searchBar)!)
+        self.destinationLocationSearchBar.addSubview((self.resultSearchController?.searchBar)!)
+        // self.view.addSubview((self.resultSearchController?.searchBar)!)
         self.resultSearchController?.hidesNavigationBarDuringPresentation = false
         self.resultSearchController?.dimsBackgroundDuringPresentation = true
         definesPresentationContext = true
@@ -180,6 +184,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
     
+    func placeDestinationLocationAnnotation(destinationCoord : CLLocationCoordinate2D) {
+        
+        let locationAnnotation = LocationAnnotation(coord: destinationCoord, tit: "Destination", color: UIColor.redColor())
+        mapView.addAnnotation(locationAnnotation)
+    }
+    
     func updateStartLocationWithPinLocation(let newCoord : CLLocationCoordinate2D) {
         
         let locationOfCoord = CLLocation(latitude: newCoord.latitude, longitude: newCoord.longitude)
@@ -206,6 +216,31 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         })
     }
     
+    func getRoute(let startLocation : CLLocation, let endLocation : CLLocation) {
+        let directionsRequest = MKDirectionsRequest()
+        
+        let startPlacemark = MKPlacemark(coordinate: startLocation.coordinate, addressDictionary: nil)
+        let endPlacemark = MKPlacemark(coordinate: endLocation.coordinate, addressDictionary: nil)
+        
+        directionsRequest.source = MKMapItem(placemark: startPlacemark)
+        directionsRequest.destination = MKMapItem(placemark: endPlacemark)
+        directionsRequest.transportType = MKDirectionsTransportType.Automobile
+        directionsRequest.requestsAlternateRoutes = false
+        
+        let directions = MKDirections(request: directionsRequest)
+        
+        directions.calculateDirectionsWithCompletionHandler({ (response, error) in
+            
+            if error != nil {
+                print("Error calculating directions")
+                return
+            }
+            
+            let userRoute = response!.routes[0] as MKRoute
+            self.userRoute = userRoute
+            self.mapView.addOverlay(userRoute.polyline)
+        })
+    }
     
     
     
@@ -236,6 +271,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     
+    func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay) -> MKOverlayRenderer {
+            let myLineRenderer = MKPolylineRenderer(polyline: self.userRoute!.polyline)
+            myLineRenderer.strokeColor = constants.overallColor
+            myLineRenderer.lineWidth = 6
+            return myLineRenderer
+    }
+    
+    
     // parse address
     func parseAddress(selectedItem : MKPlacemark) -> String {
         // put a space between "4" and "Melrose Place"
@@ -261,6 +304,38 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         return addressLine
     }
     
+    func regionForTwoPoints(let locationOne : CLLocation, let locationTwo : CLLocation) -> MKCoordinateRegion {
+        var center = CLLocationCoordinate2D()
+        
+        let lon1 = locationOne.coordinate.longitude * M_PI / 180
+        let lon2 = locationTwo.coordinate.longitude * M_PI / 180
+        
+        let lat1 = locationOne.coordinate.latitude * M_PI / 180
+        let lat2 = locationTwo.coordinate.latitude * M_PI / 180
+        
+        let dLon = lon2 - lon1
+        
+        let x = cos(lat2) * cos(dLon);
+        let y = cos(lat2) * sin(dLon);
+        
+        let lat3 = atan2( sin(lat1) + sin(lat2), sqrt((cos(lat1) + x) * (cos(lat1) + x) + y * y) );
+        let lon3 = lon1 + atan2(y, cos(lat1) + x);
+        
+        center.latitude  = lat3 * 180 / M_PI;
+        center.longitude = lon3 * 180 / M_PI;
+        
+        return MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))
+    }
+    
+    
+    
+    @IBAction func startRide(sender: AnyObject) {
+        self.performSegueWithIdentifier("startRideSegue", sender: self)
+    }
+    
+    
+    
+    
     
     
 
@@ -268,6 +343,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let segID = segue.identifier
+        
+        if segID == "startRideSegue" {
+            let destinationViewController = segue.destinationViewController as! DriverModeViewController
+            
+            destinationViewController.startLocation = self.userStartLocation!
+            destinationViewController.endLocation = self.userDestinationLocation!
+        }
+    }
+    
 
 }
 
@@ -275,7 +362,19 @@ extension ViewController : HandleMapSearchProtocol {
     func userDidSelectDestination(placemark: MKPlacemark) {
         print("User selected destination")
         
-        // update search bar text and do rudimentary routing
+        let textFieldInsideDestinationSearchBar = self.destinationSearchBarReference?.valueForKey("searchField") as? UITextField
+        textFieldInsideDestinationSearchBar?.textColor = constants.overallColor
+        textFieldInsideDestinationSearchBar?.font = UIFont(name: "HelveticaNeueThin", size: 18)
+        textFieldInsideDestinationSearchBar?.textAlignment = .Center
+        textFieldInsideDestinationSearchBar?.text = parseAddress(placemark)
+        
+        self.placeDestinationLocationAnnotation(placemark.coordinate)
+        self.userDestinationLocation = CLLocation(latitude: placemark.coordinate.latitude, longitude: placemark.coordinate.longitude)
+        
+        if let startLocation = self.userStartLocation, let endLocation = self.userDestinationLocation {
+            self.mapView.setRegion(self.regionForTwoPoints(startLocation, locationTwo: endLocation), animated: true)
+            self.getRoute(startLocation, endLocation: endLocation)
+        }
     }
 }
 
