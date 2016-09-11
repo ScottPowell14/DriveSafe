@@ -16,7 +16,23 @@
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DriveSafe" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pAu-yF-f2y">
+                                <rect key="frame" x="191" y="239" width="219" height="121"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="219" id="4D3-Jj-go8"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="HelveticaNeue-Thin" family="Helvetica Neue" pointSize="48"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" red="0.49322996899999999" green="0.72337272850000001" blue="0.78881096110000004" alpha="1" colorSpace="calibratedRGB"/>
+                        <constraints>
+                            <constraint firstItem="pAu-yF-f2y" firstAttribute="top" secondItem="Llm-lL-Icb" secondAttribute="bottom" constant="219" id="NS8-Ic-Udx"/>
+                            <constraint firstItem="pAu-yF-f2y" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="nKA-dK-SMn"/>
+                            <constraint firstItem="pAu-yF-f2y" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="ydW-Sy-f5L"/>
+                        </constraints>
                     </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>

@@ -50,11 +50,12 @@ class Ride : NSObject, CLLocationManagerDelegate {
         }
         
         self.startTime = NSDate()
-        locationManager.distanceFilter = 10
+        locationManager.distanceFilter = 2
         locationManager.activityType = .Fitness
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.startUpdatingLocation()
+        self.rideAnimationHelper()
     }
     
     func endRide() {
@@ -66,8 +67,19 @@ class Ride : NSObject, CLLocationManagerDelegate {
         self.driverViewControllerRef?.showRideFinishView()
     }
     
+    func rideAnimationHelper() {
+        let qualityOfServiceClass = QOS_CLASS_BACKGROUND
+        let backgroundQueue = dispatch_get_global_queue(qualityOfServiceClass, 0)
+        dispatch_async(backgroundQueue, {
+            self.driverViewControllerRef?.startCarAnimation()
+        })
+    }
+    
     func locationManager(manager: CLLocationManager, didUpdateToLocation newLocation: CLLocation, fromLocation oldLocation: CLLocation) {
-        self.collectionOfSpeeds?.append(newLocation.speed)
+        if newLocation.speed > 0.0 {
+            self.collectionOfSpeeds?.append(newLocation.speed)
+        }
+        self.driverViewControllerRef?.updateSpeedLabel(newLocation.speed)
         print(newLocation.speed)
     }
 }
